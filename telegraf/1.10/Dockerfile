@@ -1,4 +1,5 @@
-FROM buildpack-deps:stretch-curl
+ARG IMAGE_NAME_PREFIX
+FROM ${IMAGE_NAME_PREFIX}buildpack-deps:stretch-curl
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends iputils-ping snmp procps lm-sensors && \
