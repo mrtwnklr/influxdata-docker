@@ -14,7 +14,8 @@ RUN set -ex && \
         gpg --keyserver keyserver.pgp.com --recv-keys "$key" ; \
     done
 
-ENV TELEGRAF_VERSION 1.10.4
+ARG TELEGRAF_VERSION
+ENV TELEGRAF_VERSION ${TELEGRAF_VERSION:-1.10.4}
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" && \
     case "${dpkgArch##*-}" in \
       amd64) ARCH='amd64';; \
@@ -23,11 +24,19 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" && \
       armel) ARCH='armel';; \
       *)     echo "Unsupported architecture: ${dpkgArch}"; exit 1;; \
     esac && \
-    wget --no-verbose https://dl.influxdata.com/telegraf/releases/telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb.asc && \
-    wget --no-verbose https://dl.influxdata.com/telegraf/releases/telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb && \
-    gpg --batch --verify telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb.asc telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb && \
-    dpkg -i telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb && \
-    rm -f telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb*
+    TELEGRAF_RELEASE_TYPE=releases && \
+    if [ "${TELEGRAF_VERSION}" = 'nightly' ]; then \
+      TELEGRAF_RELEASE_TYPE=nightlies ; \
+    else \
+      TELEGRAF_VERSION=${TELEGRAF_VERSION}-1 ; \
+    fi && \
+    wget --no-verbose https://dl.influxdata.com/telegraf/${TELEGRAF_RELEASE_TYPE}/telegraf_${TELEGRAF_VERSION}_${ARCH}.deb.asc && \
+    wget --no-verbose https://dl.influxdata.com/telegraf/${TELEGRAF_RELEASE_TYPE}/telegraf_${TELEGRAF_VERSION}_${ARCH}.deb && \
+    if [ "${TELEGRAF_VERSION}" != 'nightly' ]; then \
+      gpg --batch --verify telegraf_${TELEGRAF_VERSION}_${ARCH}.deb.asc telegraf_${TELEGRAF_VERSION}_${ARCH}.deb ; \
+    fi && \
+    dpkg -i telegraf_${TELEGRAF_VERSION}_${ARCH}.deb && \
+    rm -f telegraf_${TELEGRAF_VERSION}_${ARCH}.deb*
 
 EXPOSE 8125/udp 8092/udp 8094
 
